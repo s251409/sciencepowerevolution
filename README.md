@@ -1,1 +1,1093 @@
-# sciencepowerevolution
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>과학 탐사선: 힘과 운동</title>
+    <style>
+        
+        body { margin: 0; background: #111; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; color: #eee; user-select: none; }
+        canvas { display: block; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #top-bar { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 80%; text-align: center; }
+        
+        #exp-container { width: 100%; height: 20px; background: #333; border: 2px solid #555; border-radius: 10px; overflow: hidden; }
+        #exp-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%); transition: width 0.2s; }
+        #level-text { font-size: 20px; font-weight: bold; margin-bottom: 5px; text-shadow: 1px 1px 2px black; }
+        
+        #timer-text { font-size: 24px; font-weight: bold; color: #ffeb3b; margin-bottom: 5px; text-shadow: 2px 2px 4px black; }
+        #boss-warning { display: none; font-size: 30px; font-weight: bold; color: #ff4444; margin-top: 10px; text-shadow: 0 0 10px red; animation: blink 1s infinite; }
+        #boss-cleared { display: none; font-size: 24px; font-weight: bold; color: #00e676; margin-top: 10px; text-shadow: 0 0 10px #00e676; }
+        
+        #hp-bar { position: absolute; top: 40px; left: 10px; color: #ff4444; font-weight: bold; font-size: 18px; text-shadow: 1px 1px 2px black; }
+        #info-text { position: absolute; top: 70px; left: 10px; color: #aaa; font-size: 14px; text-shadow: 1px 1px 2px black; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .modal {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(20, 20, 30, 0.95); border-radius: 15px;
+            padding: 30px; pointer-events: auto; width: 500px; text-align: center;
+        }
+
+        #quiz-modal { border: 3px solid #ffeb3b; box-shadow: 0 0 30px rgba(255, 235, 59, 0.5); }
+        #quiz-modal h2 { margin-top: 0; color: #ffeb3b; }
+        #quiz-question { font-size: 18px; margin-bottom: 20px; line-height: 1.5; word-break: keep-all; }
+        .quiz-btn {
+            display: block; width: 100%; margin: 10px 0; padding: 15px; background: #222;
+            border: 2px solid #555; border-radius: 10px; color: white; font-size: 16px;
+            cursor: pointer; transition: 0.2s; text-align: left;
+        }
+        .quiz-btn:hover { background: #333; border-color: #ffeb3b; }
+        .quiz-btn.legendary:hover { background: #4a148c; border-color: #e040fb; box-shadow: 0 0 15px #e040fb; }
+        .quiz-btn.transcendental { font-weight: bold; border-color: #ff0066; background: #1a0005; }
+        .quiz-btn.transcendental:hover { background: #4d001a; border-color: #ff0066; box-shadow: 0 0 20px #ff0066; }
+
+        .quiz-btn.center-btn { text-align: center; border-color: #ff4444; margin-top: 20px; }
+        .quiz-btn.center-btn:hover { background: #ff4444; color: white; }
+        
+        #result-msg { display: none; font-size: 20px; font-weight: bold; margin-top: 15px; }
+
+        #inventory-modal { border: 3px solid #4facfe; box-shadow: 0 0 30px rgba(0, 242, 254, 0.5); text-align: left; }
+        #inventory-modal h2 { margin-top: 0; color: #4facfe; text-align: center; border-bottom: 1px solid #4facfe; padding-bottom: 10px; }
+        .stat-line { font-size: 16px; margin: 5px 0; display: flex; justify-content: space-between; }
+        .stat-value { color: #00f2fe; font-weight: bold; }
+        #upgrade-list { margin-top: 15px; max-height: 250px; overflow-y: auto; background: #1a1a24; padding: 10px; border-radius: 5px; }
+        .upgrade-item { color: #ffeb3b; font-size: 14px; margin-bottom: 5px; }
+        .upgrade-item.legend { color: #e040fb; font-weight: bold; text-shadow: 0 0 5px #e040fb; }
+        .upgrade-item.trans { color: #ff0066; font-weight: bold; text-shadow: 0 0 8px #ff0066; }
+
+        #game-over-modal { border: 3px solid #ff4444; box-shadow: 0 0 30px rgba(255, 68, 68, 0.5); }
+        #game-over-modal h2 { margin-top: 0; color: #ff4444; font-size: 28px; }
+
+        /* 🌟 PC/모바일 선택 버튼 컨테이너 */
+.mode-select-container { 
+    display: flex; 
+    gap: 30px; 
+    justify-content: center; 
+    margin-top: 10px;
+}
+
+/* 🌟 버튼 공통 예쁜 네온 스타일 */
+.pc-btn, .mobile-btn { 
+    width: 260px;            /* 넉넉하고 일정한 고정 너비 */
+    padding: 16px 20px;      /* 텍스트가 들어갈 수 있게 좌우 패딩 최적화 */
+    font-size: 20px; 
+    font-weight: bold; 
+    color: #fff;
+    background: rgba(0, 242, 254, 0.1); 
+    border: 2px solid #00f2fe; 
+    border-radius: 12px;
+    cursor: pointer; 
+    transition: all 0.3s ease; 
+    box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+    backdrop-filter: blur(5px);
+    word-break: keep-all;    /* 단어가 중간에 쪼개지지 않도록 설정 */
+}
+
+/* 🌟 모바일 버튼 전용 노란색 네온 */
+.mobile-btn { 
+    background: rgba(255, 235, 59, 0.1);
+    border-color: #ffeb3b; 
+    box-shadow: 0 0 15px rgba(255, 235, 59, 0.3);
+}
+
+/* 🌟 마우스 올렸을 때 (호버 효과) - 살짝 위로 뜨면서 빛나게 */
+.pc-btn:hover { 
+    background: #00f2fe; color: #000; 
+    box-shadow: 0 0 30px #00f2fe; transform: translateY(-5px); 
+}
+.mobile-btn:hover { 
+    background: #ffeb3b; color: #000; 
+    box-shadow: 0 0 30px #ffeb3b; transform: translateY(-5px); 
+}
+
+/* 📱 화면이 좁을 때 (모바일 기기 등) 자동으로 세로로 예쁘게 배치 */
+@media (max-width: 600px) {
+    .mode-select-container { flex-direction: column; align-items: center; gap: 15px; }
+    .pc-btn, .mobile-btn { width: 80%; max-width: 300px; }
+}
+
+.mobile-btn { border-color: #ffeb3b; }
+.mobile-btn:hover { background: #ffeb3b; color: #000; box-shadow: 0 0 20px #ffeb3b; transform: scale(1.05); }
+
+/* 게임 UI 초기 숨김 처리 (게임 시작 버튼을 누르면 보이게 됩니다) */
+	#ui-layer { display: none; }
+
+        #main-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #001f3f; /* 메인 화면만 남색 배경 적용 */
+            z-index: 100;
+        }
+
+        /* PC/모바일 선택 버튼 컨테이너 */
+.mode-select-container { display: flex; gap: 20px; justify-content: center; }
+.pc-btn { width: 220px; font-size: 20px; }
+.mobile-btn { width: 220px; font-size: 20px; border-color: #ffeb3b; }
+.mobile-btn:hover { background: #ffeb3b; color: #000; box-shadow: 0 0 20px #ffeb3b; }
+
+/* 모바일 전용 가상 컨트롤러 (초기엔 숨김) */
+#mobile-controls {
+    display: none; position: absolute; bottom: 0; left: 0; 
+    width: 100%; height: 40%; pointer-events: none; z-index: 200;
+}
+#joystick-zone { position: absolute; bottom: 40px; left: 40px; pointer-events: auto; }
+#joystick-pad {
+    width: 140px; height: 140px; background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #00f2fe; border-radius: 50%; position: relative; backdrop-filter: blur(5px);
+}
+#joystick-knob {
+    width: 60px; height: 60px; background: rgba(0, 242, 254, 0.8);
+    border-radius: 50%; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); box-shadow: 0 0 15px #00f2fe;
+}
+#mobile-action-zone { position: absolute; bottom: 40px; right: 40px; pointer-events: auto; }
+#mobile-inv-btn {
+    width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 235, 59, 0.2);
+    border: 2px solid #ffeb3b; color: white; font-weight: bold; font-size: 16px;
+    cursor: pointer; backdrop-filter: blur(5px); box-shadow: 0 0 15px rgba(255, 235, 59, 0.5);
+}
+#mobile-inv-btn:active { background: #ffeb3b; color: black; }
+    </style>
+</head>
+<body>
+    <div id="main-screen">
+        <div style="text-align: center; margin-bottom: 50px;">
+            <h1 class="main-title">과학 탐사선</h1>
+            <p class="sub-title">- 물리 법칙으로 우주의 위협을 돌파하라 -</p>
+        </div>
+        <div class="mode-select-container">
+            <button class="menu-btn pc-btn" onclick="startGame('pc')">💻 PC 버전 시작</button>
+            <button class="menu-btn mobile-btn" onclick="startGame('mobile')">📱 모바일 버전 시작</button>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="joystick-zone">
+            <div id="joystick-pad">
+                <div id="joystick-knob"></div>
+            </div>
+        </div>
+        <div id="mobile-action-zone">
+            <button id="mobile-inv-btn" onclick="toggleInventory()">🎒<br>인벤</button>
+        </div>
+    </div>
+    <canvas id="game"></canvas>
+    
+    <div id="ui-layer">
+        <div id="top-bar">
+            <div id="timer-text">00:00</div>
+            <div id="level-text">Lv. 1 과학자</div>
+            <div id="exp-container"><div id="exp-bar"></div></div>
+            <div id="boss-warning">⚠️ 경고: 거대 위협(BOSS) 접근 중! ⚠️</div>
+            <div id="boss-cleared">✨ 보스 처치! 무한 탐사 모드 돌입 ✨</div>
+        </div>
+        <div id="hp-bar">HP: 100 / 100</div>
+        <div id="info-text">[1] 키를 눌러 상태창(레벨 확인) 열기/닫기</div>
+    </div>
+
+    <div id="quiz-modal" class="modal">
+        <h2>이론 검증 (Level Up!)</h2>
+        <div id="quiz-question">문제 텍스트</div>
+        <div id="quiz-options"></div>
+        <div id="result-msg"></div>
+    </div>
+
+    <div id="inventory-modal" class="modal">
+        <h2>탐사선 상태 및 연구 일지</h2>
+        <div class="stat-line"><span>내구도 (HP)</span> <span class="stat-value" id="stat-hp">100</span></div>
+        <div class="stat-line"><span>이동 속도 (v)</span> <span class="stat-value" id="stat-speed">3</span></div>
+        <div class="stat-line"><span>투사체 조준 범위</span> <span class="stat-value" id="stat-range">300</span></div>
+        <div class="stat-line"><span>만유인력장 범위</span> <span class="stat-value" id="stat-radius">80</span></div>
+        <h3 style="margin-top: 20px; font-size: 16px; color: #aaa;">적용된 과학 이론 (무기/업그레이드 레벨)</h3>
+        <div id="upgrade-list"></div>
+    </div>
+
+    <div id="game-over-modal" class="modal">
+        <h2 id="end-title">탐사선 파괴</h2>
+        <p style="color: #aaa; font-size: 16px;" id="end-desc">실험이 종료되었습니다.</p>
+        <div id="game-over-stats" style="font-size: 20px; margin: 20px 0; line-height: 1.6;"></div>
+        <button class="quiz-btn center-btn" onclick="location.reload()">다시 시작하기</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+        
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+        let isPaused = true, isQuizActive = false, isInventoryActive = false, isGameOver = false;
+        let keys = {};
+        let timeStopUntil = 0; 
+
+        let player = { 
+            x: 0, y: 0, vx: 0, vy: 0, size: 20, speed: 3.5, hp: 100, maxHp: 100,
+            exp: 0, maxExp: 4, level: 1, pickupRadius: 80, lastHitTime: 0,
+            weapons: {
+                projectile: { active: true, name: "질량 투사체", damage: 5, fireRate: 1000, lastFire: 0, targetRange: 300 },
+                wave: { active: false, name: "파동 발생기", damage: 10, fireRate: 3000, lastFire: 0, radius: 150 },
+                railgun: { active: false, name: "자기력 레일건", damage: 15, fireRate: 2000, lastFire: 0, droneAngle: 0 },
+                gas: { active: false, name: "염소 가스 살포기", damage: 0.02, fireRate: 2500, lastFire: 0, radius: 55, duration: 3000 },
+                laser: { active: false, name: "광학 반사 레이저", damage: 8, fireRate: 2500, lastFire: 0, maxBounces: 4 },
+                elasticity: { active: false, name: "탄성력 모듈", damage: 5, fireRate: 2000, lastFire: 0, radius: 120, pushForce: 80 }, 
+                buoyancy: { active: false, name: "아르키메데스: 부력", damage: 8, fireRate: 4000, lastFire: 0, radius: 140, airborneDuration: 1500 }, 
+                defibrillator: { active: false, name: "전기제세동기", healPercent: 0.05, fireRate: 1000, lastFire: 0 },
+                friction: { active: false, name: "마찰력 제어장치", fireRate: 6000, lastFire: 0, radius: 250, duration: 4000, slowFactor: 0.4 },
+                blackhole: { active: false, name: "상대성이론: 블랙홀", damage: 10, fireRate: 6000, lastFire: 0, pullRadius: 200, duration: 4000, travelLimit: 250 },
+                nuclear: { active: false, name: "방사능: 뉴클리어", damage: 150, fireRate: 8000, lastFire: 0, explosionRadius: 250 },
+                gyroscope: { active: false, name: "각운동량보존: 자이로스코프", damage: 3.0, radius: 120, speed: 0.08, angle: 0, state: 'active', stateTimer: 0, lastUpdate: 0, count: 3 },
+                wind: { active: false, name: "베르누이원리: 양력", damage: 15, fireRate: 3500, lastFire: 0, pushForce: 6 },
+                lightspeed: { active: false, name: "초월: 광속", duration: 5000, fireRate: 30000, lastFire: 0 },
+                gravityLens: { active: false, name: "전설: 중력렌즈", damage: 5, fireRate: 500, lastFire: 0 },
+                entropy: { active: false, name: "열역학: 엔트로피 증가", baseDamage: 5, stacks: 0, maxStacks: 5, fireRate: 1200, lastFire: 0 },
+                acceleration: { active: false, name: "가속도: 속도 증가", speedBonus: 0.5, level: 0 },
+                dispersion: { active: false, name: "충격 분산: 피해 감소", reductionRate: 0.1, level: 0 }
+            },
+            acquiredUpgrades: [{ name: "기본 질량 투사체 탑재", level: 1 }],
+            recentUpgrades: []
+        };
+
+        let enemies = [], projectiles = [], enemyProjectiles = [], activeWaves = [], activeGasClouds = [], drops = [];
+        let activeBlackHoles = [], activeExplosions = [], activePulses = [], activeBubbles = [], activeFrictionZones = [];
+
+        let playTimeMs = 0; 
+        const BOSS_SPAWN_TIME = 180000; 
+        let bossSpawned = false, bossEntity = null, endlessMode = false;
+        let baseSpawnInterval = 2500; 
+        let lastEnemySpawnTime = 0, killCount = 0;
+        let lastFrameTime = performance.now();
+
+        const upgradePool = [
+            { isLegendary: false, upgradeName: "만유인력(Gravity) 모듈", question: "질량이 있는 두 물체 사이에 서로 끌어당기는 힘을 무엇이라고 할까요?", options: ["마찰력", "탄성력", "만유인력(중력)", "자기력"], answer: 2, apply: () => player.pickupRadius += 50 },
+            { isLegendary: false, upgradeName: "질량(Mass) 증폭기", question: "물체의 질량이 클수록 운동 상태를 변화시키기 어렵습니다. 이 성질은 무엇일까요?", options: ["관성", "속력", "무게", "부피"], answer: 0, apply: () => player.weapons.projectile.damage += 5 },
+            { isLegendary: false, upgradeName: "작용-반작용 엔진", question: "로켓이 가스를 뒤로 뿜어내면 앞으로 나아가는 원리와 관련된 법칙은?", options: ["관성의 법칙", "작용-반작용의 법칙", "에너지 보존 법칙", "파동의 법칙"], answer: 1, apply: () => player.weapons.projectile.fireRate = Math.max(200, player.weapons.projectile.fireRate - 200) },
+            { isLegendary: false, upgradeName: "파동(Wave) 발생기", question: "물질의 한 곳에서 생긴 진동이 주위로 널리 퍼져나가는 현상을 무엇이라고 할까요?", options: ["입자", "파동", "마찰", "중력"], answer: 1, apply: () => { if(!player.weapons.wave.active) player.weapons.wave.active = true; else player.weapons.wave.damage += 10; } },
+            { isLegendary: false, upgradeName: "자기력(Magnetic) 보조 드론", question: "자석의 같은 극끼리는 밀어내고, 다른 극끼리는 끌어당기는 힘을 무엇이라고 할까요?", options: ["마찰력", "탄성력", "자기력", "만유인력"], answer: 2, apply: () => { if(!player.weapons.railgun.active) player.weapons.railgun.active = true; else { player.weapons.railgun.damage += 10; player.weapons.railgun.fireRate = Math.max(500, player.weapons.railgun.fireRate - 300); } } },
+            { isLegendary: false, upgradeName: "탄성력(Elasticity) 모듈", question: "외부의 힘에 의해 모양이 변한 물체가 원래의 모양으로 되돌아가려는 성질을 무엇이라고 할까요?", options: ["마찰력", "탄성력", "관성", "원심력"], answer: 1, apply: () => { if(!player.weapons.elasticity.active) player.weapons.elasticity.active = true; else { player.weapons.elasticity.radius += 20; player.weapons.elasticity.pushForce += 15; player.weapons.elasticity.damage += 5; } } },
+            { isLegendary: false, upgradeName: "아르키메데스 원리 (부력 에어본)", question: "액체나 기체 속에 있는 물체가 유체로부터 위쪽으로 밀어 올려지는 힘을 무엇이라고 할까요?", options: ["수직항력", "자기력", "부력", "마찰력"], answer: 2, apply: () => { if(!player.weapons.buoyancy.active) player.weapons.buoyancy.active = true; else { player.weapons.buoyancy.radius += 20; player.weapons.buoyancy.damage += 5; player.weapons.buoyancy.airborneDuration += 500; } } },
+            { isLegendary: false, upgradeName: "전기제세동기 (회복)", question: "심장 박동이 불규칙할 때 전기 충격을 가해 정상 리듬을 회복시키는 의료 장비는?", options: ["심전도기", "인공호흡기", "전기제세동기", "혈압계"], answer: 2, apply: () => { if(!player.weapons.defibrillator.active) player.weapons.defibrillator.active = true; else player.weapons.defibrillator.healPercent += 0.02; } },
+            { isLegendary: false, upgradeName: "확산(Diffusion) 가스", question: "물질을 이루는 입자가 스스로 운동하여 널리 퍼져 나가는 현상은?", options: ["증발", "확산", "응결", "승화"], answer: 1, apply: () => { if(!player.weapons.gas.active) player.weapons.gas.active = true; else { player.weapons.gas.radius += 15; player.weapons.gas.damage += 0.01; } } },
+            { isLegendary: false, upgradeName: "광학 반사(Reflection) 레이저", question: "빛이나 소리가 나아가다 장애물에 부딪혀 되돌아오는 현상은?", options: ["굴절", "반사", "분산", "회절"], answer: 1, apply: () => { if(!player.weapons.laser.active) player.weapons.laser.active = true; else { player.weapons.laser.maxBounces += 2; player.weapons.laser.damage += 5; } } },
+            { isLegendary: false, upgradeName: "마찰력(Friction) 제어장치", question: "두 물체의 접촉면 사이에서 물체의 운동을 방해하는 힘을 무엇이라고 할까요?", options: ["마찰력", "자기력", "탄성력", "중력"], answer: 0, apply: () => { if(!player.weapons.friction.active) player.weapons.friction.active = true; else { player.weapons.friction.radius += 50; player.weapons.friction.duration += 1000; player.weapons.friction.slowFactor = Math.max(0.1, player.weapons.friction.slowFactor - 0.1); } } },
+            { isLegendary: true, upgradeName: "전설: 상대성이론 (블랙홀)", question: "질량이 매우 커서 엄청난 중력을 가져 빛조차 빠져나갈 수 없는 천체를 무엇이라고 할까요?", options: ["백색왜성", "초신성", "블랙홀", "중성자별"], answer: 2, apply: () => { if(!player.weapons.blackhole.active) player.weapons.blackhole.active = true; else { player.weapons.blackhole.pullRadius += 50; player.weapons.blackhole.duration += 1000; } } },
+            { isLegendary: true, upgradeName: "전설: 방사능 (뉴클리어)", question: "우라늄과 같이 무거운 원자핵이 분열할 때 연쇄 반응을 일으켜 막대한 에너지를 방출하는 현상은?", options: ["화력", "수력", "풍력", "핵에너지(원자력)"], answer: 3, apply: () => { if(!player.weapons.nuclear.active) player.weapons.nuclear.active = true; else { player.weapons.nuclear.damage += 100; player.weapons.nuclear.explosionRadius += 50; } } },
+            { isLegendary: true, upgradeName: "전설: 각운동량보존 (자이로스코프)", question: "외부에서 돌림힘이 작용하지 않으면 회전하는 물체의 각운동량이 일정하게 유지되는 법칙은?", options: ["관성의 법칙", "질량 보존 법칙", "각운동량 보존 법칙", "에너지 보존 법칙"], answer: 2, apply: () => { if(!player.weapons.gyroscope.active) player.weapons.gyroscope.active = true; else { player.weapons.gyroscope.damage += 3.0; player.weapons.gyroscope.speed += 0.02; player.weapons.gyroscope.count += 1; } } },
+            { isLegendary: true, upgradeName: "전설: 베르누이원리 (양력 돌풍)", question: "유체의 속력이 증가하면 압력이 감소한다는 원리로, 비행기가 뜨는 '양력'의 기본이 되는 법칙은?", options: ["파스칼의 원리", "아르키메데스의 원리", "베르누이의 원리", "보일의 법칙"], answer: 2, apply: () => { if(!player.weapons.wind.active) player.weapons.wind.active = true; else { player.weapons.wind.damage += 10; player.weapons.wind.pushForce += 2; } } },
+            { isTranscendental: true, upgradeName: "초월: 광속 (시간 정지)", question: "빛의 속도에 가깝게 이동할수록, 외부 관찰자가 볼 때 이동하는 주체의 시간이 느리게 가는 '시간 지연' 현상을 설명하는 아인슈타인의 이론은?", options: ["일반 상대성 이론", "특수 상대성 이론", "양자 역학", "불확정성 원리"], answer: 1, apply: () => { if(!player.weapons.lightspeed.active) player.weapons.lightspeed.active = true; else { player.weapons.lightspeed.duration += 1000; player.weapons.lightspeed.fireRate = Math.max(10000, player.weapons.lightspeed.fireRate - 3000); } } },
+            { isLegendary: true, upgradeName: "전설: 중력렌즈", question: "질량을 가진 거대한 천체 주위의 시공간이 휘어져, 그 너머의 빛이 굽어보이는 현상을 무엇이라고 할까요?", options: ["적색편이", "중력 렌즈 효과", "도플러 효과", "초신성 폭발"], answer: 1, apply: () => { if(!player.weapons.gravityLens.active) player.weapons.gravityLens.active = true; else player.weapons.gravityLens.damage += 3; } },
+            { isLegendary: false, upgradeName: "열역학: 엔트로피 증가", question: "자연계의 변화는 항상 무질서도(엔트로피)가 증가하는 방향으로 일어난다는 열역학 법칙은?", options: ["열역학 제0법칙", "열역학 제1법칙", "열역학 제2법칙", "열역학 제3법칙"], answer: 2, apply: () => { if(!player.weapons.entropy.active) player.weapons.entropy.active = true; else { player.weapons.entropy.baseDamage += 3; player.weapons.entropy.maxStacks += 2; } } },
+            { isLegendary: false, upgradeName: "가속도(Acceleration) 모듈", question: "단위 시간당 속도의 변화량을 무엇이라고 할까요?", options: ["가속도", "변위", "운동량", "충격량"], answer: 0, apply: () => { if(!player.weapons.acceleration.active) { player.weapons.acceleration.active = true; player.weapons.acceleration.level = 1; } else { player.weapons.acceleration.level += 1; } player.speed += player.weapons.acceleration.speedBonus; } },
+            { isLegendary: false, upgradeName: "충격 분산(Dispersion) 장갑", question: "자동차의 에어백이나 범퍼처럼, 힘이 작용하는 시간을 길게 하여 물체가 받는 '이것'의 크기를 줄이는 원리를 사용합니다. 이것은 무엇일까요?", options: ["운동 에너지", "충격력(평균 힘)", "관성", "마찰력"], answer: 1, apply: () => { if(!player.weapons.dispersion.active) { player.weapons.dispersion.active = true; player.weapons.dispersion.level = 1; player.weapons.dispersion.reductionRate = 0.1; } else { player.weapons.dispersion.level += 1; player.weapons.dispersion.reductionRate = Math.min(0.8, player.weapons.dispersion.reductionRate + 0.1); } } }
+        ];
+
+        window.onkeydown = (e) => {
+            let key = e.key.toLowerCase(); keys[key] = true;
+            if (key === '1' && !isQuizActive && !isGameOver) toggleInventory();
+        };
+        window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
+
+        function updateUI() {
+            let secs = Math.floor(playTimeMs / 1000);
+            let m = String(Math.floor(secs / 60)).padStart(2, '0');
+            let s = String(secs % 60).padStart(2, '0');
+            document.getElementById("timer-text").innerText = endlessMode ? `무한 탐사 중... [${m}:${s}]` : `${m}:${s}`;
+            document.getElementById("level-text").innerText = `Lv. ${player.level} 과학자`;
+            document.getElementById("exp-bar").style.width = ((player.exp / player.maxExp) * 100) + "%";
+            document.getElementById("hp-bar").innerText = `HP: ${Math.max(0, Math.floor(player.hp))} / ${player.maxHp}`;
+        }
+
+        function toggleInventory() {
+            const inv = document.getElementById("inventory-modal");
+            isInventoryActive = !isInventoryActive;
+            if (isInventoryActive) {
+                isPaused = true;
+                document.getElementById("stat-hp").innerText = `${Math.floor(player.hp)} / ${player.maxHp}`;
+                document.getElementById("stat-speed").innerText = player.speed;
+                document.getElementById("stat-range").innerText = player.weapons.projectile.targetRange;
+                document.getElementById("stat-radius").innerText = player.pickupRadius;
+                
+                let listHtml = "";
+                player.acquiredUpgrades.forEach(upg => { 
+                    let isTrans = upg.name.includes("초월");
+                    let isLeg = upg.name.includes("전설");
+                    let className = isTrans ? 'trans' : (isLeg ? 'legend' : '');
+                    listHtml += `<div class="upgrade-item ${className}">- ${upg.name} <b>(Lv. ${upg.level})</b></div>`; 
+                });
+                document.getElementById("upgrade-list").innerHTML = listHtml;
+                inv.style.display = "block";
+            } else {
+                inv.style.display = "none"; isPaused = false;
+                lastFrameTime = performance.now(); requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function endGame() {
+            isPaused = true; isGameOver = true;
+            const modal = document.getElementById("game-over-modal");
+            const stats = document.getElementById("game-over-stats");
+            let secs = Math.floor(playTimeMs / 1000);
+            stats.innerHTML = `
+                <span style="color: #00f2fe;">최종 연구 레벨:</span> Lv. ${player.level}<br>
+                <span style="color: #ffeb3b;">생존 시간:</span> ${Math.floor(secs/60)}분 ${secs%60}초<br>
+                <span style="color: #ff4444;">파괴한 위협:</span> ${killCount} 개
+            `;
+            modal.style.display = "block";
+        }
+
+        function checkLevelUp() {
+            if (player.exp >= player.maxExp) {
+                player.exp -= player.maxExp; 
+                player.level++;
+                
+                if (player.level >= 30) {
+                    player.maxExp = Math.floor(player.maxExp * 1.8) + 200; 
+                } else if (player.level >= 20) {
+                    player.maxExp = Math.floor(player.maxExp * 1.3) + 20;
+                } else {
+                    player.maxExp = Math.floor(player.maxExp * 1.1) + 3; 
+                }
+                
+                updateUI(); 
+                showQuizScreen();
+            } else { 
+                updateUI(); 
+            }
+        }
+
+        function showQuizScreen() {
+            isPaused = true; isQuizActive = true;
+            const modal = document.getElementById("quiz-modal");
+            const optsContainer = document.getElementById("quiz-options");
+            const resultMsg = document.getElementById("result-msg");
+            optsContainer.innerHTML = ""; resultMsg.style.display = "none"; optsContainer.style.display = "block";
+
+            let availablePool = upgradePool.filter(q => !player.recentUpgrades.includes(q.upgradeName));
+            if (availablePool.length === 0) availablePool = upgradePool; 
+
+            // 1. 풀(Pool)을 확실하게 3가지 등급으로 분리
+            let transPool = availablePool.filter(q => q.isTranscendental);
+            let legendPool = availablePool.filter(q => q.isLegendary && !q.isTranscendental);
+            let normalPool = availablePool.filter(q => !q.isLegendary && !q.isTranscendental);
+            
+            let poolToUse;
+            let roll = Math.random();
+
+            // 2. 등급별 확률 적용 (가챠 시스템)
+            if (transPool.length > 0 && roll < 0.03) { 
+                // 3% 확률로 초월 등급 등장
+                poolToUse = transPool; 
+            } else if (legendPool.length > 0 && roll < 0.18) { 
+                // 15% 확률로 전설 등급 등장
+                poolToUse = legendPool; 
+            } else {
+                // 82% 확률로 일반 등급 등장
+                let newUpgrades = normalPool.filter(q => !player.acquiredUpgrades.some(upg => upg.name === q.upgradeName));
+                let activeUpgrades = normalPool.filter(q => player.acquiredUpgrades.some(upg => upg.name === q.upgradeName));
+                
+                // 일반 등급 안에서도 새로운 무기가 뜰 확률과 기존 무기 강화 확률을 조정
+                if (newUpgrades.length > 0 && Math.random() < 0.6) { poolToUse = newUpgrades; } 
+                else if (activeUpgrades.length > 0) { poolToUse = activeUpgrades; } 
+                else { poolToUse = normalPool; }
+            }
+
+            // 예외 처리: 조건에 맞는 풀이 비어있으면 기본 풀 사용
+            if (!poolToUse || poolToUse.length === 0) poolToUse = normalPool;
+
+            let currentQuiz = poolToUse[Math.floor(Math.random() * poolToUse.length)];
+            player.recentUpgrades.push(currentQuiz.upgradeName);
+            if(player.recentUpgrades.length > 4) player.recentUpgrades.shift();
+
+            let isTrans = currentQuiz.isTranscendental;
+            let titleColor = isTrans ? "#ff0066" : (currentQuiz.isLegendary ? "#e040fb" : "#00f2fe");
+            let titleText = isTrans ? "[!!! 초월 등급 이론 발견 !!!]" : (currentQuiz.isLegendary ? "[전설 등급 이론 발견!]" : "[보상: 미확인 과학 모듈]");
+            
+            modal.style.borderColor = isTrans ? "#ff0066" : (currentQuiz.isLegendary ? "#e040fb" : "#ffeb3b");
+            modal.style.boxShadow = isTrans ? "0 0 40px rgba(255, 0, 102, 0.6)" : (currentQuiz.isLegendary ? "0 0 30px rgba(224, 64, 251, 0.5)" : "0 0 30px rgba(255, 235, 59, 0.5)");
+            
+            document.getElementById("quiz-question").innerHTML = `<span style="color:${titleColor}; font-size: 18px; font-weight:bold;">${titleText}</span><br><br>${currentQuiz.question}`;
+
+            currentQuiz.options.forEach((opt, index) => {
+                let btn = document.createElement("button");
+                btn.className = "quiz-btn" + (isTrans ? " transcendental" : (currentQuiz.isLegendary ? " legendary" : ""));
+                btn.innerText = `${index + 1}. ${opt}`;
+                btn.onclick = () => handleAnswer(index, currentQuiz);
+                optsContainer.appendChild(btn);
+            });
+            modal.style.display = "block";
+        }
+
+        function handleAnswer(selectedIndex, quiz) {
+            const optsContainer = document.getElementById("quiz-options");
+            const resultMsg = document.getElementById("result-msg");
+            optsContainer.style.display = "none"; resultMsg.style.display = "block";
+
+            if (selectedIndex === quiz.answer) {
+                let color = quiz.isTranscendental ? "#ff0066" : (quiz.isLegendary ? "#e040fb" : "#ffeb3b");
+                quiz.apply();
+                let existingUpg = player.acquiredUpgrades.find(u => u.name === quiz.upgradeName);
+                if (existingUpg) { existingUpg.level++; } 
+                else { player.acquiredUpgrades.push({ name: quiz.upgradeName, level: 1 }); }
+                let currentLevel = existingUpg ? existingUpg.level : 1;
+                resultMsg.style.color = "#00f2fe";
+                resultMsg.innerHTML = `정답입니다!<br><span style="color:${color}; font-size:16px; font-weight:bold;">[${quiz.upgradeName}] 적용 완료! (Lv. ${currentLevel})</span>`;
+            } else {
+                resultMsg.style.color = "#ff4444"; resultMsg.innerText = "오답입니다! 실험 실패...\n(위로의 보상: 체력 회복)";
+                player.hp = Math.min(player.maxHp, player.hp + 30); updateUI();
+            }
+            setTimeout(() => {
+                document.getElementById("quiz-modal").style.display = "none";
+                isPaused = false; isQuizActive = false;
+                lastFrameTime = performance.now(); requestAnimationFrame(gameLoop);
+            }, 2000); 
+        }
+
+        function spawnEnemy() {
+            let dist = Math.max(canvas.width, canvas.height) * 0.8; let angle = Math.random() * Math.PI * 2;
+            let hpScale = endlessMode ? 5.0 : 1.5; let isRangedEnemy = Math.random() < 0.1; 
+            enemies.push({
+                x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist, size: 25, 
+                speed: isRangedEnemy ? 0.8 : 1.0 + (killCount * 0.002), hp: 10 + (player.level * hpScale), 
+                isBoss: false, airborneUntil: 0, isRanged: isRangedEnemy, attackRange: 350, lastShootTime: 0, shootRate: 2500
+            });
+        }
+
+        function spawnBoss() {
+            bossSpawned = true; document.getElementById("boss-warning").style.display = "block";
+            let angle = Math.random() * Math.PI * 2; let dist = 800;
+            bossEntity = {
+                x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist, size: 100, 
+                speed: 1.2, hp: 1500 + (player.level * 30), maxHp: 1500 + (player.level * 30), isBoss: true, airborneUntil: 0
+            };
+            enemies.push(bossEntity);
+        }
+
+        function fireWeapons(currentTime) {
+            let getVisibleEnemies = () => enemies.filter(e => {
+                let screenX = e.x - player.x + canvas.width / 2; let screenY = e.y - player.y + canvas.height / 2;
+                return screenX >= -200 && screenX <= canvas.width + 200 && screenY >= -200 && screenY <= canvas.height + 200;
+            });
+            let visibleEnemies = getVisibleEnemies();
+
+            if (player.weapons.lightspeed.active && currentTime - player.weapons.lightspeed.lastFire > player.weapons.lightspeed.fireRate) {
+                timeStopUntil = currentTime + player.weapons.lightspeed.duration;
+                player.weapons.lightspeed.lastFire = currentTime;
+            }
+
+            if (player.weapons.friction.active && currentTime - player.weapons.friction.lastFire > player.weapons.friction.fireRate) {
+                activeFrictionZones.push({ x: player.x, y: player.y, radius: player.weapons.friction.radius, spawnTime: currentTime, duration: player.weapons.friction.duration, slowFactor: player.weapons.friction.slowFactor });
+                player.weapons.friction.lastFire = currentTime;
+            }
+
+            if (player.weapons.buoyancy.active && currentTime - player.weapons.buoyancy.lastFire > player.weapons.buoyancy.fireRate) {
+                enemies.forEach(e => {
+                    let dx = e.x - player.x, dy = e.y - player.y, dist = Math.hypot(dx, dy);
+                    if (dist < player.weapons.buoyancy.radius) { e.hp -= player.weapons.buoyancy.damage; if (!e.isBoss) e.airborneUntil = currentTime + player.weapons.buoyancy.airborneDuration; checkEnemyDeath(e); }
+                });
+                activeBubbles.push({ x: player.x, y: player.y, maxRadius: player.weapons.buoyancy.radius, currentRadius: 0, spawnTime: currentTime, duration: 600 });
+                player.weapons.buoyancy.lastFire = currentTime;
+            }
+
+            if (player.weapons.elasticity.active && currentTime - player.weapons.elasticity.lastFire > player.weapons.elasticity.fireRate) {
+                enemies.forEach(e => {
+                    let dx = e.x - player.x, dy = e.y - player.y, dist = Math.hypot(dx, dy);
+                    if (dist < player.weapons.elasticity.radius) {
+                        let force = e.isBoss ? player.weapons.elasticity.pushForce * 0.1 : player.weapons.elasticity.pushForce;
+                        e.x += (dx / dist) * force; e.y += (dy / dist) * force;
+                        e.hp -= player.weapons.elasticity.damage; checkEnemyDeath(e);
+                    }
+                });
+                activePulses.push({ x: player.x, y: player.y, maxRadius: player.weapons.elasticity.radius, currentRadius: 0, spawnTime: currentTime, duration: 400 });
+                player.weapons.elasticity.lastFire = currentTime;
+            }
+
+            if (player.weapons.defibrillator.active && currentTime - player.weapons.defibrillator.lastFire > player.weapons.defibrillator.fireRate) {
+                player.hp = Math.min(player.maxHp, player.hp + (player.maxHp * player.weapons.defibrillator.healPercent));
+                player.weapons.defibrillator.lastFire = currentTime; updateUI();
+            }
+
+            if (player.weapons.projectile.active && currentTime - player.weapons.projectile.lastFire > player.weapons.projectile.fireRate) {
+                let inRangeEnemies = visibleEnemies.filter(e => Math.hypot(e.x - player.x, e.y - player.y) <= player.weapons.projectile.targetRange);
+                if (inRangeEnemies.length > 0) {
+                    let target = inRangeEnemies.reduce((closest, curr) => Math.hypot(curr.x - player.x, curr.y - player.y) < Math.hypot(closest.x - player.x, closest.y - player.y) ? curr : closest);
+                    let dx = target.x - player.x, dy = target.y - player.y, dist = Math.hypot(dx, dy);
+                    projectiles.push({ type: 'normal', x: player.x, y: player.y, vx: (dx/dist)*12, vy: (dy/dist)*12, size: 8, damage: player.weapons.projectile.damage, color: "#ffeb3b", pierce: false });
+                }
+                player.weapons.projectile.lastFire = currentTime;
+            }
+
+            if (player.weapons.wind.active && currentTime - player.weapons.wind.lastFire > player.weapons.wind.fireRate) {
+                if (visibleEnemies.length > 0) {
+                    let target = visibleEnemies.reduce((closest, curr) => Math.hypot(curr.x - player.x, curr.y - player.y) < Math.hypot(closest.x - player.x, closest.y - player.y) ? curr : closest);
+                    let dx = target.x - player.x, dy = target.y - player.y, dist = Math.hypot(dx, dy);
+                    projectiles.push({ type: 'wind', x: player.x, y: player.y, vx: (dx/dist)*8, vy: (dy/dist)*8, size: 40, damage: player.weapons.wind.damage, color: "rgba(200, 255, 255, 0.6)", pierce: true, hitEnemies: [], pushForce: player.weapons.wind.pushForce });
+                }
+                player.weapons.wind.lastFire = currentTime;
+            }
+
+            if (player.weapons.wave.active && currentTime - player.weapons.wave.lastFire > player.weapons.wave.fireRate) {
+                activeWaves.push({ x: player.x, y: player.y, currentRadius: 10, maxRadius: player.weapons.wave.radius, damage: player.weapons.wave.damage, hitEnemies: [] });
+                player.weapons.wave.lastFire = currentTime;
+            }
+
+            if (player.weapons.railgun.active && currentTime - player.weapons.railgun.lastFire > player.weapons.railgun.fireRate) {
+                if (visibleEnemies.length > 0) {
+                    let target = visibleEnemies[Math.floor(Math.random() * visibleEnemies.length)];
+                    let dX = player.x + Math.cos(player.weapons.railgun.droneAngle)*45, dY = player.y + Math.sin(player.weapons.railgun.droneAngle)*45;
+                    let dx = target.x - dX, dy = target.y - dY, dist = Math.hypot(dx, dy);
+                    projectiles.push({ type: 'normal', x: dX, y: dY, vx: (dx/dist)*25, vy: (dy/dist)*25, size: 6, damage: player.weapons.railgun.damage, color: "#b042ff", pierce: true, hitEnemies: [] });
+                }
+                player.weapons.railgun.lastFire = currentTime;
+            }
+
+            if (player.weapons.gas.active && currentTime - player.weapons.gas.lastFire > player.weapons.gas.fireRate) {
+                activeGasClouds.push({ x: player.x, y: player.y, radius: player.weapons.gas.radius, damage: player.weapons.gas.damage, spawnTime: currentTime, duration: player.weapons.gas.duration });
+                player.weapons.gas.lastFire = currentTime;
+            }
+
+            if (player.weapons.laser.active && currentTime - player.weapons.laser.lastFire > player.weapons.laser.fireRate) {
+                if (visibleEnemies.length > 0) {
+                    let target = visibleEnemies[Math.floor(Math.random() * visibleEnemies.length)];
+                    let dx = target.x - player.x, dy = target.y - player.y, dist = Math.hypot(dx, dy);
+                    projectiles.push({ type: 'laser', x: player.x, y: player.y, vx: (dx/dist)*18, vy: (dy/dist)*18, size: 10, damage: player.weapons.laser.damage, color: "#00ffcc", pierce: true, hitEnemies: [], isBouncing: true, bounces: 0, maxBounces: player.weapons.laser.maxBounces });
+                }
+                player.weapons.laser.lastFire = currentTime;
+            }
+
+            if (player.weapons.blackhole.active && currentTime - player.weapons.blackhole.lastFire > player.weapons.blackhole.fireRate) {
+                if (visibleEnemies.length > 0) {
+                    let target = visibleEnemies[Math.floor(Math.random() * visibleEnemies.length)];
+                    let dx = target.x - player.x, dy = target.y - player.y, dist = Math.hypot(dx, dy);
+                    activeBlackHoles.push({ startX: player.x, startY: player.y, x: player.x, y: player.y, vx: (dx/dist)*4, vy: (dy/dist)*4, radius: 15, pullRadius: player.weapons.blackhole.pullRadius, damage: player.weapons.blackhole.damage, spawnTime: currentTime, duration: player.weapons.blackhole.duration, travelLimit: player.weapons.blackhole.travelLimit });
+                }
+                player.weapons.blackhole.lastFire = currentTime;
+            }
+
+            if (player.weapons.nuclear.active && currentTime - player.weapons.nuclear.lastFire > player.weapons.nuclear.fireRate) {
+                if (visibleEnemies.length > 0) {
+                    let target = visibleEnemies[Math.floor(Math.random() * visibleEnemies.length)];
+                    let dx = target.x - player.x, dy = target.y - player.y, dist = Math.hypot(dx, dy);
+                    projectiles.push({ type: 'nuke', x: player.x, y: player.y, vx: (dx/dist)*8, vy: (dy/dist)*8, size: 15, damage: player.weapons.nuclear.damage, color: "#ff9800", pierce: false, explosionRadius: player.weapons.nuclear.explosionRadius });
+                }
+                player.weapons.nuclear.lastFire = currentTime;
+            }
+
+            if (player.weapons.gravityLens.active && currentTime - player.weapons.gravityLens.lastFire > player.weapons.gravityLens.fireRate) {
+                enemies.forEach(e => {
+                    if (Math.hypot(e.x - player.x, e.y - player.y) < player.pickupRadius) {
+                        e.hp -= player.weapons.gravityLens.damage; 
+                        checkEnemyDeath(e);
+                    }
+                });
+                player.weapons.gravityLens.lastFire = currentTime;
+            }
+
+            // 🌟 엔트로피 증가: 무질서한(랜덤) 방향으로 날아가는 붉은색 관통 구체
+            if (player.weapons.entropy.active && currentTime - player.weapons.entropy.lastFire > player.weapons.entropy.fireRate) {
+                let angle = Math.random() * Math.PI * 2; // 무작위 방향
+                projectiles.push({ 
+                    type: 'entropy', x: player.x, y: player.y, 
+                    vx: Math.cos(angle) * 10, vy: Math.sin(angle) * 10, 
+                    size: 14, damage: 0, color: "#ff5722", pierce: true, hitEnemies: [] 
+                });
+                player.weapons.entropy.lastFire = currentTime;
+            }
+        }
+
+        function updateGameEntities(currentTime) {
+            let isTimeStopped = currentTime < timeStopUntil;
+            activeFrictionZones = activeFrictionZones.filter(fz => currentTime - fz.spawnTime <= fz.duration);
+
+            if (player.weapons.gyroscope.active) {
+                let dt = currentTime - (player.weapons.gyroscope.lastUpdate || currentTime);
+                player.weapons.gyroscope.lastUpdate = currentTime; player.weapons.gyroscope.stateTimer += dt;
+                
+                if (player.weapons.gyroscope.state === 'active' && player.weapons.gyroscope.stateTimer > 3000) { player.weapons.gyroscope.state = 'cooldown'; player.weapons.gyroscope.stateTimer = 0; } 
+                else if (player.weapons.gyroscope.state === 'cooldown' && player.weapons.gyroscope.stateTimer > 2000) { player.weapons.gyroscope.state = 'active'; player.weapons.gyroscope.stateTimer = 0; }
+                
+                if (player.weapons.gyroscope.state === 'active') {
+                    player.weapons.gyroscope.angle += player.weapons.gyroscope.speed;
+                    for(let i = 0; i < player.weapons.gyroscope.count; i++) {
+                        let currentAngle = player.weapons.gyroscope.angle + (Math.PI * 2 / player.weapons.gyroscope.count) * i;
+                        let gx = player.x + Math.cos(currentAngle) * player.weapons.gyroscope.radius; let gy = player.y + Math.sin(currentAngle) * player.weapons.gyroscope.radius;
+                        enemies.forEach(e => { if (Math.hypot(e.x - gx, e.y - gy) < (15 + e.size)/2) { e.hp -= player.weapons.gyroscope.damage; checkEnemyDeath(e); } });
+                    }
+                }
+            }
+
+            for (let i = activeBlackHoles.length - 1; i >= 0; i--) {
+                let bh = activeBlackHoles[i];
+                if (currentTime - bh.spawnTime > bh.duration) { activeBlackHoles.splice(i, 1); continue; }
+                if (Math.hypot(bh.x - bh.startX, bh.y - bh.startY) > bh.travelLimit) { bh.vx = 0; bh.vy = 0; }
+                bh.x += bh.vx; bh.y += bh.vy;
+                enemies.forEach(e => {
+                    let dx = bh.x - e.x, dy = bh.y - e.y, dist = Math.hypot(dx, dy);
+                    if (dist < bh.pullRadius) {
+                        let pullForce = e.isBoss ? 0.3 : 3;
+                        if (!isTimeStopped) { e.x += (dx/dist) * pullForce; e.y += (dy/dist) * pullForce; }
+                        if (dist < bh.radius * 2) { e.hp -= bh.damage; checkEnemyDeath(e); } 
+                    }
+                });
+            }
+
+            for (let i = activeExplosions.length - 1; i >= 0; i--) {
+                let exp = activeExplosions[i]; exp.currentRadius += 15;
+                enemies.forEach(e => { if (Math.hypot(exp.x - e.x, exp.y - e.y) < exp.currentRadius && !exp.hitEnemies.includes(e)) { e.hp -= exp.damage; exp.hitEnemies.push(e); checkEnemyDeath(e); } });
+                if (exp.currentRadius >= exp.maxRadius) activeExplosions.splice(i, 1);
+            }
+
+            for (let i = activeWaves.length - 1; i >= 0; i--) {
+                let w = activeWaves[i]; w.currentRadius += 5;
+                enemies.forEach(e => { if (Math.hypot(e.x - w.x, e.y - w.y) < w.currentRadius && !w.hitEnemies.includes(e)) { e.hp -= w.damage; w.hitEnemies.push(e); checkEnemyDeath(e); } });
+                if (w.currentRadius >= w.maxRadius) activeWaves.splice(i, 1);
+            }
+            
+            for (let i = activeGasClouds.length - 1; i >= 0; i--) {
+                let gc = activeGasClouds[i];
+                if (currentTime - gc.spawnTime > gc.duration) { activeGasClouds.splice(i, 1); continue; }
+                enemies.forEach(e => { if (Math.hypot(e.x - gc.x, e.y - gc.y) < gc.radius) { e.hp -= gc.damage; checkEnemyDeath(e); } });
+            }
+
+            enemies = enemies.filter(e => e.hp > 0);
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i]; p.x += p.vx; p.y += p.vy; let hit = false;
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    let e = enemies[j];
+                    if (Math.hypot(p.x - e.x, p.y - e.y) < (p.size + e.size) / 2) {
+                        if (p.type === 'nuke') { hit = true; break; }
+                        if (p.type === 'wind' && !isTimeStopped) {
+                            let knockback = e.isBoss ? p.pushForce * 0.05 : p.pushForce;
+                            e.x += (p.vx / Math.hypot(p.vx, p.vy)) * knockback; e.y += (p.vy / Math.hypot(p.vx, p.vy)) * knockback;
+                        }
+                        // 🌟 엔트로피 스택 데미지 적용
+                        if (p.pierce) { 
+                            if (!p.hitEnemies.includes(e)) { 
+                                let finalDamage = p.damage;
+                                if (p.type === 'entropy') {
+                                    finalDamage = player.weapons.entropy.baseDamage + player.weapons.entropy.stacks;
+                                    // 최대치(maxStacks) 미만일 때만 1스택(공격력 1)씩 증가
+                                    if (player.weapons.entropy.stacks < player.weapons.entropy.maxStacks) {
+                                        player.weapons.entropy.stacks++; 
+                                    }
+                                }
+                                e.hp -= finalDamage; 
+                                p.hitEnemies.push(e); 
+                                checkEnemyDeath(e); 
+                                hit = true; 
+                            } 
+                        } 
+                        else { e.hp -= p.damage; checkEnemyDeath(e); hit = true; break; }
+                    }
+                }
+
+                if (p.type === 'nuke' && (hit || Math.hypot(p.x - player.x, p.y - player.y) > 1000)) {
+                    activeExplosions.push({ x: p.x, y: p.y, maxRadius: p.explosionRadius, currentRadius: 0, damage: p.damage, hitEnemies: [] });
+                    projectiles.splice(i, 1); continue;
+                }
+
+                if (p.isBouncing) {
+                    let screenX = p.x - player.x + canvas.width / 2, screenY = p.y - player.y + canvas.height / 2; let bounced = false;
+                    if (screenX <= 0) { p.vx = Math.abs(p.vx); bounced = true; } else if (screenX >= canvas.width) { p.vx = -Math.abs(p.vx); bounced = true; }
+                    if (screenY <= 0) { p.vy = Math.abs(p.vy); bounced = true; } else if (screenY >= canvas.height) { p.vy = -Math.abs(p.vy); bounced = true; }
+                    if (bounced) { p.bounces++; p.hitEnemies = []; }
+                    if (p.bounces >= p.maxBounces) projectiles.splice(i, 1);
+                } else if ((hit && !p.pierce) || Math.hypot(p.x - player.x, p.y - player.y) > 1500) { projectiles.splice(i, 1); }
+            }
+            enemies = enemies.filter(e => e.hp > 0);
+
+            enemies.forEach(e => {
+                let dx = player.x - e.x, dy = player.y - e.y, dist = Math.hypot(dx, dy);
+                if (!isTimeStopped) {
+                    let currentSlow = 1.0;
+                    activeFrictionZones.forEach(fz => { if (Math.hypot(e.x - fz.x, e.y - fz.y) < fz.radius) { currentSlow = Math.min(currentSlow, fz.slowFactor); } });
+                    let effectiveSpeed = e.speed * currentSlow; 
+
+                    if (e.airborneUntil && currentTime < e.airborneUntil) { } 
+                    else {
+                        if (e.isRanged && dist < e.attackRange) {
+                            if (currentTime - e.lastShootTime > e.shootRate) {
+                                enemyProjectiles.push({ x: e.x, y: e.y, vx: (dx/dist) * 6, vy: (dy/dist) * 6, size: 10, damage: 10, color: "#ff1744" });
+                                e.lastShootTime = currentTime;
+                            }
+                        } else { e.x += (dx / dist) * effectiveSpeed; e.y += (dy / dist) * effectiveSpeed; }
+                    }
+                    let distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+                    if (distToPlayer < (player.size + e.size) / 2) {
+                        if (!(e.airborneUntil && currentTime < e.airborneUntil)) {
+                            if (currentTime - player.lastHitTime > 1000) {
+                                let finalDamage = e.isBoss ? 40 : 15;
+                                if (player.weapons.dispersion.active) {
+                                    finalDamage *= (1 - player.weapons.dispersion.reductionRate);
+                                }
+                                player.hp -= finalDamage; player.lastHitTime = currentTime; updateUI();
+                                if(player.hp <= 0) endGame();
+                            }
+                        }
+                    }
+                }
+            });
+
+            for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+                let ep = enemyProjectiles[i];
+                if (!isTimeStopped) { ep.x += ep.vx; ep.y += ep.vy; }
+                if (!isTimeStopped && Math.hypot(ep.x - player.x, ep.y - player.y) < (ep.size + player.size) / 2) {
+                    if (currentTime - player.lastHitTime > 300) { 
+                        let finalDamage = ep.damage;
+                        if (player.weapons.dispersion.active) {
+                            finalDamage *= (1 - player.weapons.dispersion.reductionRate);
+                        }
+                        player.hp -= finalDamage; player.lastHitTime = currentTime; updateUI(); if (player.hp <= 0) endGame(); 
+                    }
+                    enemyProjectiles.splice(i, 1); continue;
+                }
+                if (Math.hypot(ep.x - player.x, ep.y - player.y) > 1500) { enemyProjectiles.splice(i, 1); }
+            }
+
+            for (let i = drops.length - 1; i >= 0; i--) {
+                let d = drops[i]; let dx = player.x - d.x, dy = player.y - d.y; let dist = Math.hypot(dx, dy);
+                if (d.magnetized) {
+                    d.x += (dx / dist) * 15; d.y += (dy / dist) * 15;
+                    if (dist < player.size) { drops.splice(i, 1); if (d.type !== 'magnet') player.exp += d.exp; checkLevelUp(); }
+                    continue;
+                }
+                if (d.type === 'magnet') {
+                    if (dist < player.pickupRadius) {
+                        d.x += (dx / dist) * 8; d.y += (dy / dist) * 8;
+                        if (dist < player.size) { drops.splice(i, 1); drops.forEach(otherDrop => { if (otherDrop.type !== 'magnet') otherDrop.magnetized = true; }); }
+                    }
+                } else {
+                    if (dist < player.pickupRadius) {
+                        d.x += (dx / dist) * 8; d.y += (dy / dist) * 8;
+                        if (dist < player.size) { drops.splice(i, 1); player.exp += d.exp; checkLevelUp(); }
+                    }
+                }
+            }
+        }
+
+        function checkEnemyDeath(enemy) {
+            if (enemy.hp <= 0 && !enemy.deadMarked) {
+                enemy.deadMarked = true; 
+                if (enemy.isBoss) { 
+                    bossEntity = null; endlessMode = true;
+                    document.getElementById("boss-warning").style.display = "none";
+                    document.getElementById("boss-cleared").style.display = "block";
+                    setTimeout(() => document.getElementById("boss-cleared").style.display = "none", 5000);
+                    for(let k=0; k<60; k++) { drops.push({ type: 'exp', x: enemy.x + (Math.random()-0.5)*200, y: enemy.y + (Math.random()-0.5)*200, size: 15, exp: 3 }); }
+                    drops.push({ type: 'magnet', x: enemy.x, y: enemy.y, size: 16 });
+                } 
+                else {
+                    let dropExp = 2 + Math.floor(player.level / 2.5); 
+                    if (player.level >= 25) {
+                        dropExp = 15 + Math.floor(player.level * 1.5); 
+                    }
+                    drops.push({ type: 'exp', x: enemy.x, y: enemy.y, size: Math.min(20, 8 + (dropExp * 0.3)), exp: dropExp }); 
+                    if (Math.random() < 0.03) drops.push({ type: 'magnet', x: enemy.x + 10, y: enemy.y + 10, size: 12 });
+                }
+                killCount++;
+            }
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = 1; let gridSize = 50;
+            let startX = -((player.x - canvas.width / 2) % gridSize) - gridSize; let startY = -((player.y - canvas.height / 2) % gridSize) - gridSize;
+            for (let i = startX; i < canvas.width; i += gridSize) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+            for (let i = startY; i < canvas.height; i += gridSize) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke(); }
+        }
+
+        function drawEntity(entity, color, isBoss = false, currentTime = 0) {
+            ctx.fillStyle = color;
+            let screenX = entity.x - player.x + canvas.width / 2; let screenY = entity.y - player.y + canvas.height / 2; let yOffset = 0; let scale = 1;
+
+            if (entity.airborneUntil && currentTime < entity.airborneUntil) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; ctx.beginPath(); ctx.ellipse(screenX, screenY + entity.size / 2, entity.size / 2, entity.size / 4, 0, 0, Math.PI * 2); ctx.fill();
+                let floatProgress = 1 - (entity.airborneUntil - currentTime) / player.weapons.buoyancy.airborneDuration; 
+                yOffset = Math.sin(floatProgress * Math.PI) * -30; scale = 1 + Math.sin(floatProgress * Math.PI) * 0.3; ctx.fillStyle = color; 
+            }
+
+            screenY += yOffset; let drawSize = entity.size * scale;
+
+            if (isBoss) {
+                ctx.save(); ctx.translate(screenX, screenY);
+                let pulse = Math.sin(currentTime / 300) * 15; ctx.shadowColor = "#ff1744"; ctx.shadowBlur = 40 + pulse;
+                ctx.fillStyle = "rgba(136, 14, 79, 0.4)"; ctx.beginPath(); ctx.arc(0, 0, drawSize / 2 + 10 + pulse, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; 
+                ctx.save(); ctx.rotate(-currentTime / 1000); ctx.fillStyle = "#1a1a1a"; ctx.strokeStyle = "#ff1744"; ctx.lineWidth = 3;
+                let spikes = 10; let outerRad = drawSize / 1.8; let innerRad = drawSize / 2.5; ctx.beginPath();
+                for (let i = 0; i < spikes * 2; i++) {
+                    let r = (i % 2 === 0) ? outerRad : innerRad; let a = (Math.PI * 2 / (spikes * 2)) * i;
+                    if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r); else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                }
+                ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+                ctx.save(); ctx.rotate(currentTime / 400); ctx.fillStyle = "#880e4f"; ctx.beginPath(); let coreSize = drawSize / 1.4;
+                ctx.moveTo(0, -coreSize/2); ctx.lineTo(coreSize/6, -coreSize/6); ctx.lineTo(coreSize/2, 0); ctx.lineTo(coreSize/6, coreSize/6); ctx.lineTo(0, coreSize/2); ctx.lineTo(-coreSize/6, coreSize/6); ctx.lineTo(-coreSize/2, 0); ctx.lineTo(-coreSize/6, -coreSize/6);
+                ctx.closePath(); ctx.fill(); ctx.restore();
+                ctx.fillStyle = "#ff8a80"; ctx.beginPath(); ctx.arc(0, 0, drawSize / 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(0, 0, drawSize / 12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+                let hpBarY = screenY - (drawSize / 2) - 40; let hpRatio = Math.max(0, entity.hp / entity.maxHp);
+                ctx.fillStyle = "rgba(0, 0, 0, 0.8)"; ctx.fillRect(screenX - 75, hpBarY, 150, 16);
+                if (hpRatio > 0.6) ctx.fillStyle = "#00e676"; else if (hpRatio > 0.3) ctx.fillStyle = "#ffea00"; else ctx.fillStyle = "#ff1744";                    
+                ctx.fillRect(screenX - 73, hpBarY + 2, 146 * hpRatio, 12); ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"; ctx.lineWidth = 2; ctx.strokeRect(screenX - 75, hpBarY, 150, 16);
+            } else {
+                ctx.beginPath(); ctx.arc(screenX, screenY, drawSize / 2, 0, Math.PI * 2); ctx.fill();
+                if(entity.isRanged) { ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(screenX, screenY, drawSize / 5, 0, Math.PI * 2); ctx.fill(); }
+            }
+        }
+
+        function gameLoop(currentTime) {
+            if (isPaused) return;
+            let dt = currentTime - lastFrameTime; playTimeMs += dt; lastFrameTime = currentTime; updateUI(); 
+
+            let isTimeStopped = currentTime < timeStopUntil;
+
+            player.vx = 0; player.vy = 0;
+            if (keys['w']) player.vy = -player.speed; if (keys['s']) player.vy = player.speed;
+            if (keys['a']) player.vx = -player.speed; if (keys['d']) player.vx = player.speed;
+            if (player.vx !== 0 && player.vy !== 0) { let diag = player.speed / Math.sqrt(2); player.vx = Math.sign(player.vx) * diag; player.vy = Math.sign(player.vy) * diag; }
+            player.x += player.vx; player.y += player.vy;
+            if (player.weapons.railgun.active) player.weapons.railgun.droneAngle += 0.05;
+            
+            if (playTimeMs >= BOSS_SPAWN_TIME && !bossSpawned) { spawnBoss(); }
+
+            let currentSpawnInterval = baseSpawnInterval - (killCount * 0.8) - (player.level * 100);
+            if (player.level >= 25) {
+                currentSpawnInterval = Math.max(100, currentSpawnInterval - 1000); 
+            } else {
+                currentSpawnInterval = Math.max(500, currentSpawnInterval); 
+            }
+            
+            if (bossSpawned && !endlessMode) currentSpawnInterval *= 2; 
+            if (endlessMode) {
+                let minLimit = player.level >= 25 ? 100 : 200;
+                currentSpawnInterval = Math.max(minLimit, currentSpawnInterval - 200);
+            }
+            
+            if (!isTimeStopped && currentTime - lastEnemySpawnTime > currentSpawnInterval) { 
+                spawnEnemy(); 
+                if (player.level >= 25) {
+                    let extraSpawns = Math.floor((player.level - 20) / 3); 
+                    for(let s = 0; s < extraSpawns; s++) { spawnEnemy(); }
+                }
+                lastEnemySpawnTime = currentTime; 
+            }
+
+            fireWeapons(currentTime); updateGameEntities(currentTime);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); drawGrid();
+            
+            if (isTimeStopped) { ctx.fillStyle = "rgba(0, 20, 50, 0.4)"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+
+            activeFrictionZones.forEach(fz => {
+                let screenX = fz.x - player.x + canvas.width / 2; let screenY = fz.y - player.y + canvas.height / 2; let lifeRatio = 1 - ((currentTime - fz.spawnTime) / fz.duration);
+                ctx.fillStyle = `rgba(184, 134, 11, ${0.25 * lifeRatio})`; ctx.beginPath(); ctx.arc(screenX, screenY, fz.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = `rgba(184, 134, 11, ${0.5 * lifeRatio})`; ctx.lineWidth = 2; ctx.stroke();
+            });
+
+            for (let i = activeBubbles.length - 1; i >= 0; i--) {
+                let b = activeBubbles[i]; let lifeRatio = (currentTime - b.spawnTime) / b.duration;
+                if (lifeRatio > 1) { activeBubbles.splice(i, 1); continue; }
+                let screenX = b.x - player.x + canvas.width / 2; let screenY = b.y - player.y + canvas.height / 2;
+                ctx.fillStyle = `rgba(0, 191, 255, ${0.3 * (1 - lifeRatio)})`; ctx.beginPath(); ctx.arc(screenX, screenY, b.maxRadius * Math.pow(lifeRatio, 0.5), 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 * (1 - lifeRatio)})`; ctx.lineWidth = 2; ctx.stroke();
+            }
+
+            for (let i = activePulses.length - 1; i >= 0; i--) {
+                let p = activePulses[i]; let lifeRatio = (currentTime - p.spawnTime) / p.duration;
+                if (lifeRatio > 1) { activePulses.splice(i, 1); continue; }
+                let screenX = p.x - player.x + canvas.width / 2; let screenY = p.y - player.y + canvas.height / 2;
+                ctx.strokeStyle = `rgba(255, 152, 0, ${1 - lifeRatio})`;  ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(screenX, screenY, p.maxRadius * Math.pow(lifeRatio, 0.5), 0, Math.PI * 2); ctx.stroke();
+            }
+
+            activeGasClouds.forEach(gc => {
+                let screenX = gc.x - player.x + canvas.width / 2; let screenY = gc.y - player.y + canvas.height / 2; let lifeRatio = Math.max(0, 1 - ((currentTime - gc.spawnTime) / gc.duration));
+                ctx.save(); ctx.shadowColor = "#00ff00"; ctx.shadowBlur = 10 * lifeRatio; ctx.fillStyle = `rgba(0, 255, 50, ${0.5 * lifeRatio})`; ctx.beginPath(); ctx.arc(screenX, screenY, gc.radius, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+            });
+
+            activeExplosions.forEach(exp => {
+                let screenX = exp.x - player.x + canvas.width / 2, screenY = exp.y - player.y + canvas.height / 2;
+                let grad = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, exp.currentRadius);
+                grad.addColorStop(0, "rgba(255, 255, 255, 0.8)"); grad.addColorStop(0.5, "rgba(255, 152, 0, 0.5)"); grad.addColorStop(1, "rgba(255, 0, 0, 0)");
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(screenX, screenY, exp.currentRadius, 0, Math.PI * 2); ctx.fill();
+            });
+
+            activeBlackHoles.forEach(bh => {
+                let screenX = bh.x - player.x + canvas.width / 2, screenY = bh.y - player.y + canvas.height / 2;
+                ctx.fillStyle = "rgba(148, 0, 211, 0.1)"; ctx.beginPath(); ctx.arc(screenX, screenY, bh.pullRadius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(screenX, screenY, bh.radius, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#e040fb"; ctx.lineWidth = 2; ctx.stroke();
+            });
+
+            if (player.weapons.gyroscope.active && player.weapons.gyroscope.state === 'active') {
+                ctx.strokeStyle = "rgba(0, 230, 118, 0.2)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(canvas.width/2, canvas.height/2, player.weapons.gyroscope.radius, 0, Math.PI*2); ctx.stroke();
+                for(let i=0; i<player.weapons.gyroscope.count; i++) {
+                    let currentAngle = player.weapons.gyroscope.angle + (Math.PI * 2 / player.weapons.gyroscope.count) * i;
+                    for(let t=1; t<=6; t++) {
+                        let trailAngle = currentAngle - (t * player.weapons.gyroscope.speed * 0.8);
+                        let tx = (player.x + Math.cos(trailAngle) * player.weapons.gyroscope.radius) - player.x + canvas.width/2; let ty = (player.y + Math.sin(trailAngle) * player.weapons.gyroscope.radius) - player.y + canvas.height/2;
+                        ctx.fillStyle = `rgba(0, 230, 118, ${0.4 - t*0.06})`; ctx.beginPath(); ctx.arc(tx, ty, 10 - t, 0, Math.PI*2); ctx.fill();
+                    }
+                    let gx = (player.x + Math.cos(currentAngle) * player.weapons.gyroscope.radius) - player.x + canvas.width/2; let gy = (player.y + Math.sin(currentAngle) * player.weapons.gyroscope.radius) - player.y + canvas.height/2;
+                    ctx.fillStyle = "#00e676"; ctx.beginPath(); ctx.arc(gx, gy, 10, 0, Math.PI*2); ctx.fill(); ctx.shadowColor = "#00e676"; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
+                }
+            }
+
+            activeWaves.forEach(w => {
+                let screenX = w.x - player.x + canvas.width / 2; let screenY = w.y - player.y + canvas.height / 2;
+                ctx.strokeStyle = `rgba(0, 255, 255, ${1 - w.currentRadius/w.maxRadius})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(screenX, screenY, w.currentRadius, 0, Math.PI * 2); ctx.stroke();
+            });
+
+            drops.forEach(d => {
+                if (d.type === 'magnet') {
+                    let screenX = d.x - player.x + canvas.width / 2, screenY = d.y - player.y + canvas.height / 2;
+                    ctx.save(); ctx.translate(screenX, screenY); ctx.rotate(playTimeMs / 200); ctx.fillStyle = "#e040fb"; ctx.shadowColor = "#e040fb"; ctx.shadowBlur = 15; ctx.fillRect(-d.size/2, -d.size/2, d.size, d.size); ctx.restore();
+                } else drawEntity(d, d.exp > 1 ? "#ffeb3b" : "#00f2fe", false, currentTime);
+            });
+
+            enemies.forEach(e => { if(e.isBoss) drawEntity(e, "#ff1744", true, currentTime); else if(e.isRanged) drawEntity(e, "#00bcd4", false, currentTime); else drawEntity(e, "#ff4444", false, currentTime); });
+
+            enemyProjectiles.forEach(ep => { let screenX = ep.x - player.x + canvas.width / 2; let screenY = ep.y - player.y + canvas.height / 2; ctx.fillStyle = ep.color; ctx.shadowColor = ep.color; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(screenX, screenY, ep.size / 2, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
+
+            projectiles.forEach(p => { 
+                if(p.type === 'nuke') drawEntity(p, "#ff9800", false, currentTime); 
+                else if(p.type === 'wind') { let screenX = p.x - player.x + canvas.width / 2; let screenY = p.y - player.y + canvas.height / 2; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(screenX, screenY, p.size / 2, 0, Math.PI * 2); ctx.fill(); } 
+                else drawEntity(p, p.color, false, currentTime); 
+            });
+            
+            ctx.strokeStyle = "rgba(255, 235, 59, 0.05)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, player.weapons.projectile.targetRange, 0, Math.PI * 2); ctx.stroke();
+            ctx.strokeStyle = "rgba(0, 242, 254, 0.1)"; ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, player.pickupRadius, 0, Math.PI * 2); ctx.stroke();
+
+            if (player.weapons.gravityLens.active) {
+                let lensPulse = Math.sin(currentTime / 200) * 3;
+                ctx.fillStyle = "rgba(148, 0, 211, 0.15)";
+                ctx.beginPath(); 
+                ctx.arc(canvas.width / 2, canvas.height / 2, player.pickupRadius + lensPulse, 0, Math.PI * 2); 
+                ctx.fill();
+                ctx.strokeStyle = "rgba(148, 0, 211, 0.5)"; 
+                ctx.lineWidth = 2; 
+                ctx.stroke();
+            }
+
+            if (player.weapons.railgun.active) {
+                let droneX = (player.x + Math.cos(player.weapons.railgun.droneAngle) * 45) - player.x + canvas.width / 2; let droneY = (player.y + Math.sin(player.weapons.railgun.droneAngle) * 45) - player.y + canvas.height / 2;
+                ctx.fillStyle = "#b042ff"; ctx.beginPath(); ctx.arc(droneX, droneY, 6, 0, Math.PI * 2); ctx.fill();
+            }
+
+            if (currentTime - player.lastHitTime < 1000) { ctx.fillStyle = Math.floor(currentTime / 100) % 2 === 0 ? "white" : "red"; } else { ctx.fillStyle = "#4facfe"; }
+            if (player.weapons.defibrillator.active && currentTime - player.weapons.defibrillator.lastFire < 200) { ctx.shadowColor = "#ffeb3b"; ctx.shadowBlur = 15; ctx.fillStyle = "#ffeb3b"; }
+            
+            ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2, player.size / 2, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+
+            if (isTimeStopped) {
+                ctx.fillStyle = "rgba(0, 255, 255, 0.8)"; ctx.font = "bold 50px 'Malgun Gothic', sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.shadowColor = "#00ffff"; ctx.shadowBlur = 20; ctx.fillText("🕒 TIME STOPPED", canvas.width / 2, canvas.height / 4); ctx.shadowBlur = 0;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        updateUI(); requestAnimationFrame(gameLoop);
+
+     let isMobileMode = false;
+
+// 🌟 기존 startGame 함수를 변경
+function startGame(mode) {
+    document.getElementById("main-screen").style.display = "none";
+    document.getElementById("ui-layer").style.display = "block";
+    document.body.style.background = "#111"; // 게임 시작 시 배경색을 원래대로 복구
+    
+    if (mode === 'mobile') {
+        isMobileMode = true;
+        document.getElementById("mobile-controls").style.display = "block"; // 모바일 UI 켜기
+        initJoystick(); // 조이스틱 터치 이벤트 활성화
+    } else {
+        isMobileMode = false;
+        document.getElementById("mobile-controls").style.display = "none"; // 혹시 모르니 확실히 끄기
+    }
+    
+    isPaused = false;
+    lastFrameTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+// 🌟 조이스틱 터치 및 이동 로직 추가
+let joystickActive = false;
+let joystickCenter = { x: 0, y: 0 };
+
+function initJoystick() {
+    const pad = document.getElementById('joystick-pad');
+    const knob = document.getElementById('joystick-knob');
+    
+    pad.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystickActive = true;
+        const rect = pad.getBoundingClientRect();
+        // 패드의 중심점 계산
+        joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        handleJoystickMove(e.touches[0]);
+    }, { passive: false });
+
+    pad.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (joystickActive) handleJoystickMove(e.touches[0]);
+    }, { passive: false });
+
+    pad.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        joystickActive = false;
+        // 손가락을 떼면 손잡이를 원래 위치(가운데)로 원상복구
+        knob.style.transform = `translate(-50%, -50%)`;
+        resetMobileMovement();
+    }, { passive: false });
+
+    function handleJoystickMove(touch) {
+        const dx = touch.clientX - joystickCenter.x;
+        const dy = touch.clientY - joystickCenter.y;
+        
+        // 조이스틱이 패드 밖으로 나가지 않도록 최대 반경 설정 (약 40px)
+        const distance = Math.min(40, Math.sqrt(dx * dx + dy * dy)); 
+        const angle = Math.atan2(dy, dx);
+        
+        const knobX = Math.cos(angle) * distance;
+        const knobY = Math.sin(angle) * distance;
+        
+        // 손잡이 위치 시각적 이동
+        knob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+        // 플레이어 이동 로직 연결 (기존 키보드 이벤트와 호환되게 연결)
+        updateMobileMovement(knobX, knobY);
+    }
+}
+
+// 기존 키보드 W, A, S, D를 대신 눌러주는 효과를 냅니다. 
+// (작성자님의 기존 이동 객체 이름이 'keys'라고 가정했습니다. 다르면 수정이 필요합니다!)
+function updateMobileMovement(x, y) {
+    const threshold = 15; // 반응 기준점 (데드존)
+    
+    if(typeof keys !== 'undefined') {
+        keys['w'] = y < -threshold;
+        keys['s'] = y > threshold;
+        keys['a'] = x < -threshold;
+        keys['d'] = x > threshold;
+    }
+}
+
+function resetMobileMovement() {
+    if(typeof keys !== 'undefined') {
+        keys['w'] = false;
+        keys['s'] = false;
+        keys['a'] = false;
+        keys['d'] = false;
+    }
+}
+    </script>
+</body>
+</html>
